@@ -7,7 +7,7 @@ function App() {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        api.get("/test")
+        api.get("/api/hello")
             .then((response) => {
                 setMessage(response.data);
             })
