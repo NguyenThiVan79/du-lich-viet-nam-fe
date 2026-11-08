@@ -1,39 +1,40 @@
+
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-
-const destinations = [
-    {
-        name: "Vịnh Hạ Long",
-        location: "Quảng Ninh",
-        image: "https://images.unsplash.com/photo-1528127269322-539801943592?w=900"
-    },
-    {
-        name: "Phố cổ Hội An",
-        location: "Đà Nẵng",
-        image: "https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=900"
-    },
-    {
-        name: "Sa Pa",
-        location: "Lào Cai",
-        image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=900"
-    },
-    {
-        name: "Tràng An",
-        location: "Ninh Bình",
-        image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=900"
-    }
-];
-
-const categories = [
-    "Biển đảo",
-    "Núi rừng",
-    "Văn hóa – Lịch sử",
-    "Danh lam thắng cảnh"
-];
+import api from "../services/api";
 
 function Home() {
+    const [destinations, setDestinations] = useState([]);
+    const [categories, setCategories] = useState([]);
+
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        const fetchHomeData = async () => {
+            try {
+                const [categoryResponse, destinationResponse] =
+                    await Promise.all([
+                        api.get("/categories"),
+                        api.get("/destinations")
+                    ]);
+
+                setCategories(categoryResponse.data);
+                setDestinations(destinationResponse.data);
+            } catch (err) {
+                console.error("Lỗi tải dữ liệu trang chủ:", err);
+                setError("Không thể tải dữ liệu. Vui lòng thử lại sau.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchHomeData();
+    }, []);
+
     return (
         <>
             <Header />
@@ -68,10 +69,12 @@ function Home() {
                         placeholder="Bạn muốn khám phá địa điểm nào?"
                     />
 
-                    <button onClick={() => {
-                        document.getElementById("destinations")
-                            ?.scrollIntoView({ behavior: "smooth" });
-                    }}>
+                    <button
+                        onClick={() => {
+                            document.getElementById("destinations")
+                                ?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                    >
                         Tìm kiếm
                     </button>
                 </section>
@@ -84,9 +87,9 @@ function Home() {
 
                     <div className="category-list">
                         {categories.map((category) => (
-                            <div className="category-card" key={category}>
+                            <div className="category-card" key={category.id}>
                                 <span>✦</span>
-                                <h3>{category}</h3>
+                                <h3>{category.name}</h3>
                             </div>
                         ))}
                     </div>
@@ -102,29 +105,45 @@ function Home() {
                         </p>
                     </div>
 
-                    <div className="destination-grid">
-                        {destinations.map((place) => (
-                            <article
-                                className="destination-card"
-                                key={place.name}
-                            >
-                                <img src={place.image} alt={place.name} />
+                    {loading ? (
+                        <p>Đang tải địa điểm du lịch...</p>
+                    ) : error ? (
+                        <p>{error}</p>
+                    ) : (
+                        <div className="destination-grid">
+                            {destinations.map((place) => (
+                                <article
+                                    className="destination-card"
+                                    key={place.id}
+                                >
+                                    {place.image && (
+                                        <img
+                                            src={place.image}
+                                            alt={place.name}
+                                        />
+                                    )}
 
-                                <div className="destination-info">
-                                    <span>📍 {place.location}</span>
-                                    <h3>{place.name}</h3>
-                                    <p>
-                                        Khám phá vẻ đẹp và trải nghiệm
-                                        đặc sắc tại {place.name}.
-                                    </p>
-                                </div>
-                            </article>
-                        ))}
-                    </div>
+                                    <div className="destination-info">
+                                        <span>
+                                            📍 {place.province?.name || place.address}
+                                        </span>
+
+                                        <h3>{place.name}</h3>
+
+                                        <p>
+                                            {place.description ||
+                                                `Khám phá vẻ đẹp và trải nghiệm đặc sắc tại ${place.name}.`}
+                                        </p>
+                                    </div>
+                                </article>
+                            ))}
+                        </div>
+                    )}
                 </section>
 
                 <section className="cta-section">
                     <h2>Bắt đầu hành trình của bạn</h2>
+
                     <p>
                         Đăng ký tài khoản để cùng khám phá
                         những điểm đến tuyệt vời.
